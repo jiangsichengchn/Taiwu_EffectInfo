@@ -20,6 +20,7 @@ namespace EffectInfo
     public partial class EffectInfoBackend
     {
         public static readonly ushort MY_MAGIC_NUMBER_GetReadingEfficiency = 6724;
+
         //重载BuildingDomain的CallMethod响应供前端使用
         [HarmonyPrefix, HarmonyPatch(typeof(TaiwuDomain), "CallMethod")]
         public static bool BuildingDomainCallMethodPatch(TaiwuDomain __instance,ref int __result,
@@ -35,6 +36,7 @@ namespace EffectInfo
             }
             return true;
         }
+
         //TaiwuDomain.GetCurrReadingEfficiency
         public static string GetReadingEfficiencyInfo(TaiwuDomain __instance, DataContext context)
         {
@@ -233,20 +235,21 @@ namespace EffectInfo
 
                         if (orgTemplateId != 0)
                         {
-                            short settlementId = DomainManager.Organization.GetSettlementIdByOrgTemplateId(orgTemplateId);
-                            short sectApprovingRate = DomainManager.Organization.GetElement_Sects(settlementId).CalcApprovingRate();
-                            if (sectApprovingRate >= 300)
+                            //short settlementId = DomainManager.Organization.GetSettlementIdByOrgTemplateId(orgTemplateId);
+                            //short sectApprovingRate = DomainManager.Organization.GetElement_Sects(settlementId).CalcApprovingRate();
+                            //if (sectApprovingRate >= 300)
+                            //{
+
+                            //}
+                            Config.SectApprovingEffectItem config = Config.SectApprovingEffect.Instance[(int)(orgTemplateId - 1)];
+                            LifeSkillShorts attainments = _taiwuChar.GetLifeSkillAttainments();
+                            foreach (sbyte lifeSkillType in config.RequirementSubstitutions)
                             {
-                                Config.SectApprovingEffectItem config = Config.SectApprovingEffect.Instance[(int)(orgTemplateId - 1)];
-                                LifeSkillShorts attainments = _taiwuChar.GetLifeSkillAttainments();
-                                foreach (sbyte lifeSkillType in config.RequirementSubstitutions)
+                                tmp_list.Add(ToInfoAdd($"{Config.LifeSkillType.Instance[lifeSkillType].Name}造诣", attainments.Items[lifeSkillType], -3));
+                                if (maxAttainment < attainments.Items[lifeSkillType])
                                 {
-                                    tmp_list.Add(ToInfoAdd($"{Config.LifeSkillType.Instance[lifeSkillType].Name}造诣", attainments.Items[lifeSkillType], -3));
-                                    if (maxAttainment < attainments.Items[lifeSkillType])
-                                    {
-                                        maxAttainment = attainments.Items[lifeSkillType];
-                                        max_idx = tmp_list.Count - 1;
-                                    }
+                                    maxAttainment = attainments.Items[lifeSkillType];
+                                    max_idx = tmp_list.Count - 1;
                                 }
                             }
                         }
@@ -266,7 +269,7 @@ namespace EffectInfo
                 }
                 //门派
                 sbyte sectId = Config.CombatSkill.Instance[book.GetCombatSkillTemplateId()].SectId;
-                sect_result = CalcReadingSpeedSectApprovalFactorInfo(_taiwuChar,out sect_factor, (sbyte)((curReadingPage == 0) ? -1 : direction), sectId, (sbyte)((curReadingPage == 0) ? direction : -1), (sbyte)(curReadingPage - 1), isInBattle);
+                sect_result = CalcReadingSpeedSectApprovalFactorInfo(_taiwuChar,out sect_factor, sectId, (curReadingPage == 0) ? SkillBookStateHelper.GetOutlinePageType(pageTypes) : direction, (sbyte) curReadingPage, isInBattle);
                 //此项未实装
                 SpecifyBuildingEffect buildingEffect = DomainManager.Building.GetSpecifyBuildingEffect(_taiwuChar.GetLocation());
                 if (buildingEffect != null)
@@ -337,8 +340,9 @@ namespace EffectInfo
             result = ToInfoPercent("效率加成",check_value,-1)+result;
             return result;
         }
+
         //由于游戏有bug，总纲和非总纲判断反了，此处额外传入一个正确的direction
-        public static string CalcReadingSpeedSectApprovalFactorInfo(Character _taiwuChar, out int factor,sbyte real_combatSkillDirection,sbyte orgTemplateId, sbyte combatSkillDirection, sbyte pageId, bool isInBattle)
+        public static string CalcReadingSpeedSectApprovalFactorInfo(Character _taiwuChar, out int factor, sbyte orgTemplateId, sbyte combatSkillDirection, sbyte pageId, bool isInBattle)
         {
             var result = "";
             if (orgTemplateId == 0)
@@ -349,76 +353,85 @@ namespace EffectInfo
             }
             short settlementId = DomainManager.Organization.GetSettlementIdByOrgTemplateId(orgTemplateId);
             short sectApprovingRate = DomainManager.Organization.GetElement_Sects(settlementId).CalcApprovingRate();
-            if (sectApprovingRate >= 300)//门派支持
+            //if (sectApprovingRate >= 300)//门派支持
+            //{
+
+            //}
+            //else
+            //{
+            //    factor = 100;
+            //    result += ToInfoPercent("门派支持<300", factor, -3);
+            //}
+
+            Config.SectApprovingEffectItem config = Config.SectApprovingEffect.Instance[orgTemplateId - 1];
+            //总纲字决
+            short behaviorTypeBonus = config.BehaviorTypeBonuses[_taiwuChar.GetBehaviorType()];
+            result += ToInfoMulti("总纲字决", behaviorTypeBonus, -3);
+            //正逆练
+            int directionBonus = ((pageId >= 1) ? config.CombatSkillDirectionBonuses[combatSkillDirection] : 100);
+            if (directionBonus != 100)
+                result += ToInfoMulti(combatSkillDirection == 0 ? "正练" : "逆练", directionBonus, -3);
+            //if (combatSkillDirection >= 0)
+            //{
+            //    directionBonus = config.CombatSkillDirectionBonuses[combatSkillDirection];
+            //    if (directionBonus != 100)
+            //        result += ToInfoMulti(combatSkillDirection == 0 ? "正练(bug)" : "逆练(bug)", directionBonus, -3);
+            //}
+            //else
+            //{
+            //    directionBonus = 100;
+            //    //result += ToInfoMulti("无正逆练(bug)", directionBonus, -3);
+            //}
+            //if (real_combatSkillDirection >= 0)
+            //{
+            //    result += ToInfoMulti(real_combatSkillDirection == 0 ? "正练(未实装)" : "逆练(未实装)", config.CombatSkillDirectionBonuses[real_combatSkillDirection], -3);
+            //}
+            //else
+            //{
+            //    //result += ToInfoMulti("无正逆练(应当)", 100, -3);
+            //}
+
+            //性别
+            int genderBonus = ((pageId < 1) ? 100 : ((_taiwuChar.GetGender() == 1) ? config.PageBonusesOfMale[pageId - 1] : config.PageBonusesOfFemale[pageId - 1]));
+            result += ToInfoMulti("性别", genderBonus, -3);
+
+            factor = behaviorTypeBonus * directionBonus * genderBonus / 10000;
+            result += ToInfo("倍率", "/10000", -3);
+
+            if (isInBattle)
             {
-                Config.SectApprovingEffectItem config = Config.SectApprovingEffect.Instance[orgTemplateId - 1];
-                //总纲字决
-                short behaviorTypeBonus = config.BehaviorTypeBonuses[_taiwuChar.GetBehaviorType()];
-                result += ToInfoMulti("总纲字决", behaviorTypeBonus, -3);
-                //正逆练
-                int directionBonus;
-                if(combatSkillDirection>=0)
-                {
-                    directionBonus = config.CombatSkillDirectionBonuses[combatSkillDirection];
-                    if(directionBonus!=100)
-                        result += ToInfoMulti(combatSkillDirection == 0 ? "正练(bug)" : "逆练(bug)", directionBonus,-3);
-                }
-                else
-                {
-                    directionBonus = 100;
-                    //result += ToInfoMulti("无正逆练(bug)", directionBonus, -3);
-                }
-                if (real_combatSkillDirection >= 0)
-                {
-                    result += ToInfoMulti(real_combatSkillDirection == 0 ? "正练(未实装)" : "逆练(未实装)", config.CombatSkillDirectionBonuses[real_combatSkillDirection], -3);
-                }
-                else
-                {
-                    //result += ToInfoMulti("无正逆练(应当)", 100, -3);
-                }
-
-                //性别
-                int genderBonus = ((pageId < 1) ? 100 : ((_taiwuChar.GetGender() == 1) ? config.PageBonusesOfMale[pageId - 1] : config.PageBonusesOfFemale[pageId - 1]));
-                result += ToInfoMulti("性别", genderBonus, -3);
-
-                factor = behaviorTypeBonus * directionBonus * genderBonus / 10000;
-                result += ToInfo("倍率","/10000",-3);
-
-                if (isInBattle)
-                {
-                    int battleGenderBonus = ((pageId < 1) ? 100 : ((_taiwuChar.GetGender() == 1) ? config.ActualCombatBonusOfMale : config.ActualCombatBonusOfFemale));
-                    factor = factor * battleGenderBonus / 100;
-                    result += ToInfoPercent("性别奖励(战斗)", battleGenderBonus, -3);
-                }
+                int battleGenderBonus = ((pageId < 1) ? 100 : ((_taiwuChar.GetGender() == 1) ? config.ActualCombatBonusOfMale : config.ActualCombatBonusOfFemale));
+                factor = factor * battleGenderBonus / 100;
+                result += ToInfoPercent("性别奖励(战斗)", battleGenderBonus, -3);
             }
-            else
-            {
-                factor = 100;
-                result += ToInfoPercent("门派支持<300", factor, -3);
-            }
+
             if (sectApprovingRate >= 400)
             {
                 factor = factor * 125 / 100;
                 result += ToInfoPercent("门派支持>400", 125, -3);
             }
-            if (sectApprovingRate >= 600)
-            {
-                factor = factor * 125 / 100;
-                result += ToInfoPercent("门派支持>600", 125, -3);
-            }
+            //if (sectApprovingRate >= 600)
+            //{
+            //    factor = factor * 125 / 100;
+            //    result += ToInfoPercent("门派支持>600", 125, -3);
+            //}
             result =ToInfoPercent("门派",factor,-2)+ result;
             return result;
         }
+
         public static string CalcReferenceBooksBonusSpeedPercentInfo(ref int refBonusSpeed, TaiwuDomain __instance,GameData.Domains.Item.SkillBook book)
         {
             var result = "";
 
-            refBonusSpeed = 20;
-            result += ToInfoAdd("基础",20,-3);
+            refBonusSpeed = 0;
+            int bonusPerBook = 10;
 
             sbyte bookSkillType = ((book.GetItemSubType() == 1000) ? book.GetLifeSkillType() : book.GetCombatSkillType());
             List<short> bonusRefBookIds = book.GetReferenceBooksWithBonus();
             ItemKey[] referenceBooks = __instance.GetReferenceBooks();
+            refBonusSpeed += bonusPerBook * referenceBooks.Count(book => book.IsValid());
+            if (refBonusSpeed != 0)
+                result += ToInfoAdd($"基础(每本+{bonusPerBook})", refBonusSpeed, -3);
             for (int i = 0; i < referenceBooks.Length; i++)
             {
                 ItemKey refBookKey = referenceBooks[i];
@@ -447,7 +460,7 @@ namespace EffectInfo
                 refBonusSpeed = 0;
                 result += ToInfoMin("下限",0,-3);
             }
-            result = ToInfoAdd("参考书", refBonusSpeed,-2) +result;
+            result = ToInfoAdd("参考书", refBonusSpeed,-2) + result;
             return result;
         }
 

@@ -54,7 +54,7 @@ namespace EffectInfo
                 UnityEngine.Debug.Log("Effect Info:Refresh ReadingEfficiency output.");
             });
         }
-        [HarmonyPostfix, HarmonyPatch(typeof(UI_Reading), "UpdateReferenceBooks")]
+        [HarmonyPostfix, HarmonyPatch(typeof(UI_Reading), "UpdateUsedReferenceBooks")]
         public static void UpdateReferenceBooksPatch(UI_Reading __instance)
         {
             UpdateReadingMouseTips(__instance);
@@ -64,7 +64,7 @@ namespace EffectInfo
         {
             UpdateReadingMouseTips(__instance);
         }
-        [HarmonyPostfix, HarmonyPatch(typeof(UI_Reading), "UpdateLifeSkillBookList")]
+        [HarmonyPostfix, HarmonyPatch(typeof(UI_Reading), "UpdateReferenceBookList")]
         public static void UpdateLifeSkillBookListPatch(UI_Reading __instance)
         {
             UpdateReadingMouseTips(__instance);

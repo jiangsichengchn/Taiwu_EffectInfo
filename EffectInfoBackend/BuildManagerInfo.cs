@@ -257,7 +257,7 @@ namespace EffectInfo
                     sbyte lifeSkillType = Config.BuildingBlock.Instance[blockData.TemplateId].RequireLifeSkillType;
                     if (config.IsCollectResourceBuilding)
                     {
-                        //产出资源(resourceType<6即常规六种资源)的经营建筑，使用产出的资源的技艺类型而非建筑的记忆类型(SerialUpdate->UpdateResourceBlock)
+                        //产出资源(resourceType<6即常规六种资源)的经营建筑，使用产出的资源的技艺类型而非建筑的技艺类型(SerialUpdate->UpdateResourceBlock)
                         //官方前端统统使用的GetBuildingAttainment，即使用建筑的造诣显示，因此官方显示的效率可能不正确
                         sbyte resourceType = __instance.GetCollectBuildingResourceType(blockKey);
                         sbyte getResourceType = (sbyte)((resourceType < 6) ? resourceType : 5);
@@ -577,6 +577,7 @@ namespace EffectInfo
                                         int prob = Math.Clamp(item_chance + base_chance, 0, 100);
                                         tmp += ToInfoPercent($"{itemPair.Value}({ToStringSign(item_chance)}%)", prob, -2);
                                     }
+
                                     result += ToInfoPercent("成功率", 100.0 - fail_chance, -1) + "\n" 
                                         + ToInfo("物品相对概率", "", -1)
                                         + ToInfoNote("每个物品分别以相对概率决定是否入围，再在所有入围物品中以均等概率选一个作为最终产物，当且仅当入围物品为0时失败", -1)
@@ -628,7 +629,63 @@ namespace EffectInfo
                                 }
                                 result += "\n"+tmp;
                             }
+                            //产出物品
+                            else if (shopEventConfig.ItemGradeProbList.Count > 0)
+                            {
+                                tmp = "";
+                                double fail_chance = 100.0;
+                                var resourceAttainment = __instance.GetShopBuildingAttainment(blockData, blockKey, true);
+                                var base_chance = resourceAttainment / (int)__instance.AttainmentToProb;
+                                tmp += ToInfo("基础概率", $"{base_chance}%", -2);
+                                tmp += ToInfoNote("每个物品的相对概率=基础概率+物品概率加成", -2);
+                                tmp += ToInfoAdd("造诣总合/3", resourceAttainment, -3);
+                                tmp += ToInfoDivision("倍率", __instance.AttainmentToProb, -3);
 
+                                var gradeChances = new int[9];
+                                for (int i = 0; i < shopEventConfig.ItemGradeProbList.Count; i++)
+                                {
+                                    int item_chance = shopEventConfig.ItemGradeProbList[i];
+                                    int prob = Math.Clamp(item_chance + base_chance, 0, 100);
+                                    gradeChances[i] += item_chance;
+                                    fail_chance *= 1 - (double)prob / 100.0;
+                                }
+
+                                var absChances = Enumerable.Repeat(0d, 9).ToList();//物品的绝对概率
+                                for (int situation = 0; situation < 1 << gradeChances.Length; ++situation)
+                                {
+                                    double situation_chance = 1.0;//该种情况的概率
+                                    int count = 0;
+                                    for (int index = 0; index < gradeChances.Length; ++index)
+                                    {
+                                        var relative_chance = Math.Clamp(gradeChances[index] + base_chance, 0, 100);
+                                        if (((situation >> index) & 1) == 1)
+                                        {
+                                            situation_chance *= relative_chance;
+                                            ++count;
+                                        }
+                                        else
+                                            situation_chance *= 100 - relative_chance;
+                                        situation_chance /= 100;
+                                    }
+                                    situation_chance /= count;
+                                    for (int index = 0; index < gradeChances.Length; ++index)//均分到每个物品的上
+                                        if (((situation >> index) & 1) == 1)
+                                            absChances[index] += situation_chance;
+                                }
+                                for (int index = 0; index < gradeChances.Length; index++)
+                                {
+                                    var relative_chance = Math.Clamp(gradeChances[index] + base_chance, 0, 100);
+                                    double abs_chance = absChances[index] * 100;
+                                    if (relative_chance == 0)
+                                        tmp += ToInfo($"{9 - index}品({ToStringSign(gradeChances[index])}%)", $"×0(0)%", -2);
+                                    else
+                                        tmp += ToInfo($"{9 - index}品({ToStringSign(gradeChances[index])}%)", $"×{relative_chance}({abs_chance.ToString("f2")})%", -2);
+                                }
+                                result += ToInfoPercent("成功率", 100.0 - fail_chance, -1) + "\n"
+                                    + ToInfo("物品相对概率(绝对概率)", "", -1)
+                                    + ToInfoNote("绝对概率之和等于成功率", -1)
+                                    + tmp;
+                            }
                         }
                 }
             }
