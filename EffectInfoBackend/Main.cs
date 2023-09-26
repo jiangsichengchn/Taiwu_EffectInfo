@@ -382,7 +382,7 @@ namespace EffectInfo
         //isAdd为true时只计算config为正的，否则只计算为负的
         public unsafe static string CustomGetNeiliAllocationInfo(ref int check_value, Character instance, ECharacterPropertyReferencedType propertyId, bool isAdd)
         {
-            NeiliAllocation allocations = instance.GetNeiliAllocation();
+            NeiliAllocation allocations = instance.GetAllocatedNeiliEffects();
             Config.NeiliTypeItem neiliTypeCfg = Config.NeiliType.Instance[instance.GetNeiliType()];
             bool dirty_tag = false;
             var tmp = "";
@@ -584,10 +584,10 @@ namespace EffectInfo
             Config.CharacterItem template = Config.Character.Instance[character.GetTemplateId()];
             var template_value = template.BaseAvoidValues;//此处是int下面是short
             var target_value = character.GetAvoidValues();
-            return GetHitAvoidValuesImp(target_value, "__AvoidValue", template_value, fieldId, propertyType, __instance, character);
+            return GetHitAvoidValuesImp(target_value, "__AvoidValue", template_value, fieldId, propertyType, MyAffectedDataFieldIds.ConsummateLevelRelatedMainAttributesAvoidValues, __instance, character);
         }
         unsafe public static string GetHitAvoidValuesImp(HitOrAvoidInts target_value, string save_name, HitOrAvoidInts template_value,
-            List<ushort> fieldId, List<ECharacterPropertyReferencedType> propertyType,
+            List<ushort> fieldId, List<ECharacterPropertyReferencedType> propertyType, ushort affectedDataFieldId,
             CharacterDomain __instance, GameData.Domains.Character.Character character)
         {
             //和HitValue计算仅有SpecialEffect.GetTotalPercentModifyValue的部分不同
@@ -638,6 +638,28 @@ namespace EffectInfo
                 check_value[1] += maxMainAttributes.Items[5] / 2 + 100;
                 check_value[2] += maxMainAttributes.Items[1] / 2 + 100;
                 check_value[3] += maxMainAttributes.Items[2] / 2 + 100;
+            }
+            //精纯加值(特定功法)
+            {
+                MainAttributes maxMainAttributes = character.GetMaxMainAttributes();
+                bool[] relatedConsummateLevel = new bool[4];
+                relatedConsummateLevel[0] = DomainManager.SpecialEffect.ModifyData(charId, -1, affectedDataFieldId, dataValue: false, 0, 0);
+                relatedConsummateLevel[1] = DomainManager.SpecialEffect.ModifyData(charId, -1, affectedDataFieldId, dataValue: false, 5, 1);
+                relatedConsummateLevel[2] = DomainManager.SpecialEffect.ModifyData(charId, -1, affectedDataFieldId, dataValue: false, 1, 2);
+                relatedConsummateLevel[3] = DomainManager.SpecialEffect.ModifyData(charId, -1, affectedDataFieldId, dataValue: false, 2, 3);
+                var level = character.GetConsummateLevel();
+                var relatedConsummateLevelValue = relatedConsummateLevel[0] ? maxMainAttributes.Items[0] / 6 * level : 0;
+                result[0] += ToInfoAdd("精纯加值", relatedConsummateLevelValue, 1);
+                check_value[0] += relatedConsummateLevelValue;
+                relatedConsummateLevelValue = relatedConsummateLevel[1] ? maxMainAttributes.Items[5] / 6 * level : 0;
+                result[1] += ToInfoAdd("精纯加值", relatedConsummateLevelValue, 1);
+                check_value[1] += relatedConsummateLevelValue;
+                relatedConsummateLevelValue = relatedConsummateLevel[2] ? maxMainAttributes.Items[1] / 6 * level : 0;
+                result[2] += ToInfoAdd("精纯加值", relatedConsummateLevelValue, 1);
+                check_value[2] += relatedConsummateLevelValue;
+                relatedConsummateLevelValue = relatedConsummateLevel[3] ? maxMainAttributes.Items[2] / 6 * level : 0;
+                result[3] += ToInfoAdd("精纯加值", relatedConsummateLevelValue, 1);
+                check_value[3] += relatedConsummateLevelValue;
             }
             {
                 //装备，食物，技能加值
@@ -853,7 +875,7 @@ namespace EffectInfo
             Config.CharacterItem template = Config.Character.Instance[character.GetTemplateId()];
             var template_value = template.BaseHitValues;//此处是int下面是short
             var target_value = character.GetHitValues();
-            return GetHitAvoidValuesImp(target_value, "__HitValue", template_value, fieldId, propertyType, __instance, character);
+            return GetHitAvoidValuesImp(target_value, "__HitValue", template_value, fieldId, propertyType, MyAffectedDataFieldIds.ConsummateLevelRelatedMainAttributesHitValues, __instance, character);
         }
         unsafe public static string GetAttractionInfo(CharacterDomain __instance, Character character)
         {
@@ -1495,7 +1517,7 @@ namespace EffectInfo
                         if (agileSkillId >= 0)
                         {
                             GameData.Domains.CombatSkill.CombatSkill skill = DomainManager.CombatSkill.GetElement_CombatSkills(new CombatSkillKey(charId, agileSkillId));
-                            var value = DomainManager.CombatSkill.GetCombatSkillCastAddMoveSpeed(skill, -1);
+                            var value = CombatSkillDomain.CalcCastAddMoveSpeed(skill, combatChar.AffectingMoveSkillFixedPower);
                             check_value += value;
                             result += ToInfoAdd("战斗技能", value, 1);
                             //GetCombatSkillCastAddMoveSpeedInfo很简单就不写个函数了

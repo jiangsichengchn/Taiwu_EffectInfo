@@ -831,7 +831,11 @@ namespace EffectInfo
 		public static ushort CanUseSkillMobilityAsStance = 0;
 
 		public static ushort CastCostNeiliAllocation = 0;
-	}
+        public static ushort ConsummateLevelRelatedMainAttributesHitValues = 0;
+        public static ushort ConsummateLevelRelatedMainAttributesAvoidValues = 0;
+        public static ushort ConsummateLevelRelatedMainAttributesPenetrations = 0;
+        public static ushort ConsummateLevelRelatedMainAttributesPenetrationResists = 0;
+    }
 	//同上，BuildingBlock.DefKeys
 	public static class MyBuildingBlockDefKey
     {

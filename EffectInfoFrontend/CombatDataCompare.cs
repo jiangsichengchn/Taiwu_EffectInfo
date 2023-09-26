@@ -20,12 +20,12 @@ namespace EffectInfo
         {
             if(!gameObject)
                 return;
-            var cover = gameObject.GetOrAddComponent<CImage>();
-            if (alpha)
-            {
-                cover.AutoSize = true;
-                cover.SetAlpha(0f);
-            }
+            var cover = gameObject.GetOrAddComponent<TextMeshProUGUI>();
+            //if (alpha)
+            //{
+            //    cover.AutoSize = true;
+            //    cover.SetAlpha(0f);
+            //}
             cover.raycastTarget = true;
             cover.SetAllDirty();
             GetOrAddSimpleMouseTipDisplayer(gameObject);
@@ -63,28 +63,29 @@ namespace EffectInfo
                 hit_rect = ____dataCompare.CGet<RectTransform>("EnemyHitTypeHolder");
                 avoid_rect = ____dataCompare.CGet<RectTransform>("SelfHitTypeHolder");
             }
+
             //初始化，为了能让每条属性分别显示提示，将SelfHitTypeHolder设为rayCast=false,并在每个hitType上加上透明的CImage用于接受射线，并添加mouseTip
             //不知道为什么，更改raycastTarget不会保留
-            foreach (var holder in new RectTransform[]{hit_rect,avoid_rect })
-                if(holder.GetComponent<CImage>())
-                {
-                    holder.GetComponent<CImage>().raycastTarget = false;
-                    for(int i=0;i<holder.childCount;++i)
-                        SetCover(holder.GetChild(i).gameObject,true);
-                }
+            foreach (var holder in new RectTransform[] { hit_rect, avoid_rect })
+            {
+                //holder.GetComponent<CImage>().raycastTarget = false;
+                for (int i = 0; i < holder.childCount; ++i)
+                    SetCover(holder.GetChild(i).Find("Value").gameObject, true);
+            }
+
             var atkdefHolder = ____dataCompare.gameObject.transform.Find("OuterInnerHolder");
             //攻防同理
             {
-                ____dataCompare.CGet<GameObject>("SelfAttackTag").GetComponent<CImage>().raycastTarget = false;
-                ____dataCompare.CGet<GameObject>("SelfDefendTag").GetComponent<CImage>().raycastTarget = false;
-                ____dataCompare.CGet<GameObject>("EnemyDefendTag").GetComponent<CImage>().raycastTarget = false;
-                ____dataCompare.CGet<GameObject>("EnemyDefendTag").GetComponent<CImage>().raycastTarget = false;
-                foreach(var transform in new Transform[] { atkdefHolder.Find("Outer").Find("SelfOuterName"),
-                                                            atkdefHolder.Find("Inner").Find("SelfInnerName"),
-                                                            atkdefHolder.Find("Outer").Find("EnemyOuterName"),
-                                                            atkdefHolder.Find("Inner").Find("EnemyInnerName")})
+                //____dataCompare.CGet<GameObject>("SelfAttackTag").GetComponent<CImage>().raycastTarget = false;
+                //____dataCompare.CGet<GameObject>("SelfDefendTag").GetComponent<CImage>().raycastTarget = false;
+                //____dataCompare.CGet<GameObject>("EnemyDefendTag").GetComponent<CImage>().raycastTarget = false;
+                //____dataCompare.CGet<GameObject>("EnemyDefendTag").GetComponent<CImage>().raycastTarget = false;
+                foreach (var transform in new Transform[] { atkdefHolder.Find("Outer").Find("SelfOuterValue"),
+                                                            atkdefHolder.Find("Inner").Find("SelfInnerValue"),
+                                                            atkdefHolder.Find("Outer").Find("EnemyOuterValue"),
+                                                            atkdefHolder.Find("Inner").Find("EnemyInnerValue")})
                 {
-                    transform.gameObject.GetComponent<TextMeshProUGUI>().raycastTarget=true;
+                    transform.gameObject.GetComponent<TextMeshProUGUI>().raycastTarget = true;
                     GetOrAddSimpleMouseTipDisplayer(transform.gameObject);
                 }
             }
@@ -94,29 +95,28 @@ namespace EffectInfo
             //命中
             for (sbyte hitType = 0; hitType < 4; hitType = (sbyte)(hitType + 1))
                 if (____damageCompareData.HitType.Exist(hitType))
-                    mouseTips.Add(hit_rect.GetChild(3 - hitType).GetComponent<MouseTipDisplayer>());
+                    mouseTips.Add(hit_rect.GetChild(3 - hitType).Find("Value").GetComponent<MouseTipDisplayer>());
             while (mouseTips.Count < 3)
                 mouseTips.Add(null);
             //回避
             for (sbyte hitType = 0; hitType < 4; hitType = (sbyte)(hitType + 1))
                 if (____damageCompareData.HitType.Exist(hitType))
-                    mouseTips.Add(avoid_rect.GetChild(3 - hitType).GetComponent<MouseTipDisplayer>());
+                    mouseTips.Add(avoid_rect.GetChild(3 - hitType).Find("Value").GetComponent<MouseTipDisplayer>());
             while (mouseTips.Count < 6)
                 mouseTips.Add(null);
             //攻防
-            if(____damageCompareData.IsAlly)
-                foreach (var transform in new Transform[] { atkdefHolder.Find("Outer").Find("SelfOuterName"),
-                                                            atkdefHolder.Find("Inner").Find("SelfInnerName"),
-                                                            atkdefHolder.Find("Outer").Find("EnemyOuterName"),
-                                                            atkdefHolder.Find("Inner").Find("EnemyInnerName")})
+            if (____damageCompareData.IsAlly)
+                foreach (var transform in new Transform[] { atkdefHolder.Find("Outer").Find("SelfOuterValue"),
+                                                            atkdefHolder.Find("Inner").Find("SelfInnerValue"),
+                                                            atkdefHolder.Find("Outer").Find("EnemyOuterValue"),
+                                                            atkdefHolder.Find("Inner").Find("EnemyInnerValue")})
                     mouseTips.Add(transform.GetComponent<MouseTipDisplayer>());
             else
-                foreach (var transform in new Transform[] { atkdefHolder.Find("Outer").Find("EnemyOuterName"),
-                                                            atkdefHolder.Find("Inner").Find("EnemyInnerName"),
-                                                            atkdefHolder.Find("Outer").Find("SelfOuterName"),
-                                                            atkdefHolder.Find("Inner").Find("SelfInnerName")})
+                foreach (var transform in new Transform[] { atkdefHolder.Find("Outer").Find("EnemyOuterValue"),
+                                                            atkdefHolder.Find("Inner").Find("EnemyInnerValue"),
+                                                            atkdefHolder.Find("Outer").Find("SelfOuterValue"),
+                                                            atkdefHolder.Find("Inner").Find("SelfInnerValue")})
                     mouseTips.Add(transform.GetComponent<MouseTipDisplayer>());
-
 
             while (mouseTips.Count < 10)
                 mouseTips.Add(null);
@@ -125,8 +125,8 @@ namespace EffectInfo
                 List<string> combatCompareText = new List<string>();
                 //顺序:3命中3闪避2攻击(外内)2防御
                 Serializer.Deserialize(dataPool, offset, ref combatCompareText);
-                for (int i = 0;i<mouseTips.Count&&i<combatCompareText.Count;i++)
-                    if(mouseTips[i] != null&& mouseTips[i].PresetParam!=null&& mouseTips[i].PresetParam.Count()>1)
+                for (int i = 0; i < mouseTips.Count && i < combatCompareText.Count; i++)
+                    if (mouseTips[i] != null && mouseTips[i].PresetParam != null && mouseTips[i].PresetParam.Count() > 1)
                     {
                         mouseTips[i].PresetParam[1] = combatCompareText[i];
                         mouseTips[i].NeedRefresh = true;
