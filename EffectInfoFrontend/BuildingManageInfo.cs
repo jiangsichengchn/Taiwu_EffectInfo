@@ -56,7 +56,7 @@ namespace EffectInfo
                         ""
                 };
             }
-            __instance.AsynchMethodCall(MyDomainIds.Building, MY_MAGIC_NUMBER_GetResourceOutput, __instance.GetCurrentBuildingBlockKey(), delegate (int offset, RawDataPool dataPool)
+            __instance.AsyncMethodCall(MyDomainIds.Building, MY_MAGIC_NUMBER_GetResourceOutput, __instance.GetCurrentBuildingBlockKey(), delegate (int offset, RawDataPool dataPool)
             {
                 var text = "";
                 Serializer.Deserialize(dataPool, offset, ref text);
@@ -95,7 +95,7 @@ namespace EffectInfo
                         "每月经营进度",
                         ""
             };
-            __instance.AsynchMethodCall(MyDomainIds.Building, MY_MAGIC_NUMBER_GetShopOutput, __instance.GetCurrentBuildingBlockKey(), delegate (int offset, RawDataPool dataPool)
+            __instance.AsyncMethodCall(MyDomainIds.Building, MY_MAGIC_NUMBER_GetShopOutput, __instance.GetCurrentBuildingBlockKey(), delegate (int offset, RawDataPool dataPool)
             {
                 var text = "";
                 Serializer.Deserialize(dataPool, offset, ref text);

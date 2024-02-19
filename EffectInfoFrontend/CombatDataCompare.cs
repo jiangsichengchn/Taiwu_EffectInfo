@@ -120,7 +120,7 @@ namespace EffectInfo
 
             while (mouseTips.Count < 10)
                 mouseTips.Add(null);
-            __instance.AsynchMethodCall(MyDomainIds.TutorialChapter, MY_MAGIC_NUMBER_GetCombatCompareText, delegate (int offset, RawDataPool dataPool)
+            __instance.AsyncMethodCall(MyDomainIds.TutorialChapter, MY_MAGIC_NUMBER_GetCombatCompareText, delegate (int offset, RawDataPool dataPool)
             {
                 List<string> combatCompareText = new List<string>();
                 //顺序:3命中3闪避2攻击(外内)2防御

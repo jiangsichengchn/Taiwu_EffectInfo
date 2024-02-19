@@ -45,7 +45,7 @@ namespace EffectInfo
                      $"<color=#grey>\t\t·智力无法接受\t\t\t\t 0%</color>\n"
                 };
             }
-            __instance.AsynchMethodCall(MyDomainIds.Taiwu, MY_MAGIC_NUMBER_GetReadingEfficiency, delegate (int offset, RawDataPool dataPool)
+            __instance.AsyncMethodCall(MyDomainIds.Taiwu, MY_MAGIC_NUMBER_GetReadingEfficiency, delegate (int offset, RawDataPool dataPool)
             {
                 var text = "";
                 Serializer.Deserialize(dataPool, offset, ref text);

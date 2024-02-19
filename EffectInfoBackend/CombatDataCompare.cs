@@ -387,6 +387,7 @@ namespace EffectInfo
             else//无视闪避的特殊效果
                 ignoreArmor = DomainManager.SpecialEffect.ModifyData(enemyChar.GetId(), attackSkillId, MyAffectedDataFieldIds.IgnoreArmorOnCalcAvoid, false);
 
+            int moveSkillAdd = 0;
             if (isHit && character.GetAffectingMoveSkillId() >= 0)//身法？
             {
                 var tmp = "";
@@ -399,8 +400,8 @@ namespace EffectInfo
                 tmp += ToInfoAdd(skill_name, addHitValues.Items[hitType], -2);
                 if (addHitValues.Items[hitType] != 0)
                     tmp += GetCombatSkillAddFieldInfo(move_skill, addHitValues.Items[hitType], hitTypeFieldId[hitType]).Item2;
-                result += ToInfoAdd($"身法", total, -1)
-                    + tmp;
+                result += ToInfoAdd($"身法（不吃武器乘算）", total, -1) + tmp;
+                moveSkillAdd = total;
                 check_value += total;
             }
             else if ((!isHit) && character.GetAffectingDefendSkillId() > 0)//防御技能
@@ -471,6 +472,7 @@ namespace EffectInfo
                 //var value = isHit ? 150 : 105;
                 var value = 100;
                 check_value *= value;//没有除100，这之后都是以放大100倍的状态计算
+                moveSkillAdd *= 100;
                 result += ToInfoMulti("放大", value, -1);
             }
             //武器
@@ -516,7 +518,7 @@ namespace EffectInfo
                 }
                 result += ToInfoPercent($"武器乘算", percent, -1);
                 result += tmp;
-                check_value = check_value * percent / 100;
+                check_value = (check_value - moveSkillAdd) * percent / 100 + moveSkillAdd;
             }
             //乘算系数
             {
@@ -557,16 +559,16 @@ namespace EffectInfo
                 }
                 {//效果加成
                     int value = 0;
-                    sbyte valueSumType = 0;
+                    EDataValueSumType valueSumType = EDataValueSumType.All;
                     {//我方
                         var value_text = "";
-                        (value, value_text) = GetModifyValueInfoS(ref dirty_tag, id, attackSkillId, (ushort)hitTypeFieldId[hitType], 1, attackSkillId, character.PursueAttackCount, bodyPart, valueSumType, -3);
+                        (value, value_text) = GetModifyValueInfoS(ref dirty_tag, id, attackSkillId, (ushort)hitTypeFieldId[hitType], EDataModifyType.AddPercent, attackSkillId, character.PursueAttackCount, bodyPart, valueSumType, -3);
                         tmp += ToInfoAdd("我方效果" + valueSumType2Text(valueSumType), value, -2) + value_text;
                         percent += value;
                     }
                     {//敌方
                         var value_text = "";
-                        (value, value_text) = GetModifyValueInfoS(ref dirty_tag, enemyChar.GetId(), attackSkillId, (ushort)enemyHitTypeFieldId[hitType], 1, attackSkillId, character.PursueAttackCount, bodyPart, valueSumType, -3);
+                        (value, value_text) = GetModifyValueInfoS(ref dirty_tag, enemyChar.GetId(), attackSkillId, (ushort)enemyHitTypeFieldId[hitType], EDataModifyType.AddPercent, attackSkillId, character.PursueAttackCount, bodyPart, valueSumType, -3);
                         tmp += ToInfoAdd("敌方效果" + valueSumType2Text(valueSumType), value, -2) + value_text;
                         percent += value;
                     }
@@ -846,7 +848,7 @@ namespace EffectInfo
                             var name = Config.Poison.Instance[poisonType].Name;
                             //GetPoison和GetCurrentPoison不同？
                             int base_value = isOutter ? Config.Poison.Instance[(sbyte)poisonType].ReduceOuterResist : Config.Poison.Instance[(sbyte)poisonType].ReduceInnerResist;
-                            int factor = Math.Min((int)PoisonsAndLevels.CalcPoisonedLevel(character.GetPoison().Items[poisonType], character.GetPoisonResist().Items[poisonType]), 3);
+                            int factor = Math.Min((int)PoisonsAndLevels.CalcPoisonedLevel(character.GetPoison().Items[poisonType]), 3);
                             int value = -base_value * factor;
                             tmp += ToInfoAdd("中毒", value, 2);
                             tmp += ToInfoAdd("基础", base_value, 3);
@@ -855,18 +857,18 @@ namespace EffectInfo
                         }
                     }
                 }
-                sbyte valueSumType = 0;
+                EDataValueSumType valueSumType = EDataValueSumType.All;
                 {//我方
                     var value_text = "";
                     int value = 0;
-                    (value, value_text) = GetModifyValueInfoS(ref dirty_tag, _id, attackSkillId, peneFieldId[idx], 1, attackSkillId, character.PursueAttackCount, bodyPart, valueSumType, -3);
+                    (value, value_text) = GetModifyValueInfoS(ref dirty_tag, _id, attackSkillId, peneFieldId[idx], EDataModifyType.AddPercent, attackSkillId, character.PursueAttackCount, bodyPart, valueSumType, -3);
                     tmp += ToInfoAdd("我方效果" + valueSumType2Text(valueSumType), value, 2) + value_text;
                     total_value += value;
                 }
                 {//敌方
                     var value_text = "";
                     int value = 0;
-                    (value, value_text) = GetModifyValueInfoS(ref dirty_tag, enemyChar.GetId(), attackSkillId, enemyPeneFieldId[idx], 1, attackSkillId, character.PursueAttackCount, bodyPart, valueSumType, -3);
+                    (value, value_text) = GetModifyValueInfoS(ref dirty_tag, enemyChar.GetId(), attackSkillId, enemyPeneFieldId[idx], EDataModifyType.AddPercent, attackSkillId, character.PursueAttackCount, bodyPart, valueSumType, -3);
                     tmp += ToInfoAdd("敌方效果" + valueSumType2Text(valueSumType), value, 2) + value_text;
                     total_value += value;
                 }

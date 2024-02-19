@@ -1016,11 +1016,11 @@ namespace EffectInfo
 	}
 	public partial class EffectInfoBackend : TaiwuRemakePlugin
     {
-		public static string valueSumType2Text(sbyte valueSumType)
+		public static string valueSumType2Text(EDataValueSumType valueSumType)
         {
-			if (valueSumType == 1)
+			if (valueSumType == EDataValueSumType.OnlyAdd)
 				return "加值";
-			if (valueSumType == 2)
+			if (valueSumType == EDataValueSumType.OnlyReduce)
 				return "减值";
 			return "";
         }
