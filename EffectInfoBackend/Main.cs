@@ -647,8 +647,9 @@ namespace EffectInfo
                 for (int i = 0; i < CT;i++)
                 {
                     dirty_tag = false;
-                    short maxMainAttribute = maxMainAttributes.Items[i];
-                    bool relatedConsummateLevel = DomainManager.SpecialEffect.ModifyData(charId, -1, affectedDataFieldId, dataValue: false, mainAttributeTypes[i], i);
+                    int mainAttributeType = mainAttributeTypes[i];
+                    short maxMainAttribute = maxMainAttributes.Items[mainAttributeType];
+                    bool relatedConsummateLevel = DomainManager.SpecialEffect.ModifyData(charId, -1, affectedDataFieldId, dataValue: false, mainAttributeType, i);
                     sbyte level = character.GetConsummateLevel();
                     int relatedConsummateLevelValue = relatedConsummateLevel ? maxMainAttribute / divisor * level : 0;
                     if (relatedConsummateLevelValue != 0)
@@ -672,7 +673,15 @@ namespace EffectInfo
                 {
                     short musicId = musicList[index];
                     Config.MusicItem musicCfg = Config.Music.Instance[musicId];
-                    addValue += musicCfg.HitRateMind;
+                    if (save_name == "__HitValue")
+                    {
+                        addValue += musicCfg.HitRateMind;
+                    }
+                    else
+                    {
+                        addValue += (short)musicCfg.AvoidRateMind;
+                    }
+
                 }
                 if (addValue != 0)
                     dirty_tag = true;
@@ -1193,6 +1202,15 @@ namespace EffectInfo
                 check_value[i] = (int)baseMainAttributes.Items[i];
                 result[i] += ToInfoAdd("基础", check_value[i], 1);
             }
+            //剑柄遗惠
+            for (int i = 0; i < CT; i++)
+            {
+                int addValue =DomainManager.Extra.GetTaiwuPropertyPermanentBonus((ECharacterPropertyReferencedType)i, CharacterPropertyBonus.EPropertyBonusType.AddValue);
+                check_value[i] += addValue;
+                result[i] += ToInfoAdd("剑柄遗惠", addValue, 1);
+            }
+
+
             for (int i = 0; i < CT; i++)
             {
                 EDataValueSumType valueSumType = EDataValueSumType.All;

@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace EffectInfo
 { 
@@ -18,7 +19,7 @@ namespace EffectInfo
 
         public static void SetCover(GameObject gameObject,bool alpha=false)
         {
-            if(!gameObject)
+            if (!gameObject)
                 return;
             var cover = gameObject.GetOrAddComponent<TextMeshProUGUI>();
             //if (alpha)
@@ -51,6 +52,12 @@ namespace EffectInfo
         [HarmonyPrefix, HarmonyPatch(typeof(UI_Combat), "UpdateDataCompare")]
         public static void UpdateDataComparePatch(UI_Combat __instance, Refers ____dataCompare, DamageCompareData ____damageCompareData)
         {
+            Refers dataCompare = __instance.CGet<Refers>("DataCompare");
+            if (dataCompare.GetComponent<GraphicRaycaster>() == null)
+            {
+                dataCompare.gameObject.AddComponent<GraphicRaycaster>();
+            }
+
             RectTransform hit_rect;
             RectTransform avoid_rect;
             if (____damageCompareData.IsAlly)
@@ -125,6 +132,7 @@ namespace EffectInfo
                 List<string> combatCompareText = new List<string>();
                 //顺序:3命中3闪避2攻击(外内)2防御
                 Serializer.Deserialize(dataPool, offset, ref combatCompareText);
+                System.IO.File.WriteAllText("1.txt", string.Join(",", combatCompareText));
                 for (int i = 0; i < mouseTips.Count && i < combatCompareText.Count; i++)
                     if (mouseTips[i] != null && mouseTips[i].PresetParam != null && mouseTips[i].PresetParam.Count() > 1)
                     {

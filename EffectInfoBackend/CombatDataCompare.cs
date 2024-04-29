@@ -56,11 +56,12 @@ namespace EffectInfo
                 int idx = fieldId - Min(MyAffectedDataFieldIds.AttackerHitTechnique, MyAffectedDataFieldIds.AttackerHitStrength, MyAffectedDataFieldIds.AttackerHitSpeed, MyAffectedDataFieldIds.AttackerHitMind);
                 //完全不知道是什么id
                 short propertyId = (short)(12 + idx);
+                int baseValue = GlobalConfig.Instance.AgileSkillBaseAddHit * configData.AddHitOnCast[idx] / 100;
                 int gridBonus = skill.GetBreakoutGridCombatSkillPropertyBonus(propertyId, 0);
 
-                check_value = configData.AddHitOnCast[idx] + gridBonus;
-                result += ToInfoAdd($"基础{skill_name}", configData.AddHitOnCast[idx], 3);
-                result += ToInfoAdd("突破", gridBonus, 3);
+                check_value = baseValue * (100 + gridBonus) / 100;
+                result += ToInfoAdd($"基础{skill_name}", baseValue, 3);
+                result += ToInfoPercent("突破", 100 + gridBonus, 3);
             }
             //护体施放时加的闪避
             //CalcAddAvoidValueOnCast
@@ -69,11 +70,12 @@ namespace EffectInfo
             {
                 int idx = fieldId - Min(MyAffectedDataFieldIds.DefenderAvoidTechnique, MyAffectedDataFieldIds.DefenderAvoidStrength, MyAffectedDataFieldIds.DefenderAvoidSpeed, MyAffectedDataFieldIds.DefenderAvoidMind);
                 short propertyId = (short)(20 + idx);
+                int baseValue = GlobalConfig.Instance.DefendSkillBaseAddAvoid * configData.AddHitOnCast[idx] / 100;
                 int gridBonus = skill.GetBreakoutGridCombatSkillPropertyBonus(propertyId, 0);
 
-                check_value = configData.AddAvoidOnCast[idx] + gridBonus;
-                result += ToInfoAdd($"基础{skill_name}", configData.AddAvoidOnCast[idx], 3);
-                result += ToInfoAdd("突破", gridBonus, 3);
+                check_value = baseValue * (100 + gridBonus) / 100;
+                result += ToInfoAdd($"基础{skill_name}", baseValue, 3);
+                result += ToInfoPercent("突破", gridBonus, 3);
             }
             //护体施放时加的防御
             //CalcAddPenetrateResist
@@ -84,6 +86,7 @@ namespace EffectInfo
                 int gridBonus = skill.GetBreakoutGridCombatSkillPropertyBonus(propertyId, 0);
 
                 var base_value = idx == 0 ? configData.AddOuterPenetrateResistOnCast : configData.AddInnerPenetrateResistOnCast;
+                base_value *= (short)(GlobalConfig.Instance.DefendSkillBaseAddPenetrateResist / 100);
                 check_value = base_value + gridBonus;
                 result += ToInfoAdd($"基础{skill_name}", base_value, 3);
                 result += ToInfoAdd("突破", gridBonus, 3);
@@ -99,8 +102,8 @@ namespace EffectInfo
                 result += ToInfoAdd($"基础{skill_name}", check_value, 3);
 
                 var gridBonus = skill.GetBreakoutGridCombatSkillPropertyBonus(30, 0);
-                check_value += gridBonus;
-                result += ToInfoAdd("突破", gridBonus, 3);
+                check_value = check_value * (100 + gridBonus) / 100;
+                result += ToInfoPercent($"突破", 100 + gridBonus, 3);
                 if (idx < 3 && !isMindHit)
                 {
                     HitOrAvoidInts hitDistribution = skill.GetHitDistribution();
@@ -124,9 +127,9 @@ namespace EffectInfo
                 int gridBonus = skill.GetBreakoutGridCombatSkillPropertyBonus(29, 0);
 
                 var base_value = configData.Penetrate;
-                check_value = base_value + gridBonus;
+                check_value = base_value * (100 + gridBonus) / 100;
                 result += ToInfoAdd($"基础{skill_name}", base_value, 3);
-                result += ToInfoAdd("突破", gridBonus, 3);
+                result += ToInfoPercent("突破", 100 + gridBonus, 3);
             }
             sbyte practiceLevel = skill.GetPracticeLevel();
             short power = skill.GetPower();
@@ -174,8 +177,11 @@ namespace EffectInfo
 
         [HarmonyPostfix, HarmonyPatch(typeof(CombatDomain), "CalcAttackSkillDataCompare")]
         unsafe public static void CalcAttackSkillDataComparePatch(CombatDomain __instance, DamageCompareData ____damageCompareData,
-            DataContext context, CombatCharacter attacker, CombatCharacter defender, short skillId)
+            CombatContext context)
         {
+            CombatCharacter attacker = context.Attacker;
+            CombatCharacter defender = context.Defender;
+            short skillId = context.SkillTemplateId;
             for (int i = 0; i < Cached_CombatCompareText.Count; i++)
                 Cached_CombatCompareText[i] = "";
             if (skillId < 0)//忽略不放技能的情况
@@ -326,27 +332,27 @@ namespace EffectInfo
                             {
                                 var idx = 2 - hitType;
                                 if (myCompareData.HitValue[idx] != ____damageCompareData.HitValue[idx])
-                                    Cached_CombatCompareText[hitType] += ToInfo("复杂效果", $"=>{____damageCompareData.HitValue[idx] / 100}", 1) + special_skills_text;
+                                    Cached_CombatCompareText[hitType] += ToInfo("复杂效果", $"=>{____damageCompareData.HitValue[idx]}", 1) + special_skills_text;
                                 if (myCompareData.AvoidValue[idx] != ____damageCompareData.AvoidValue[idx])
-                                    Cached_CombatCompareText[3 + hitType] += ToInfo("复杂效果", $"=>{____damageCompareData.AvoidValue[idx] / 100}", 1) + special_skills_text;
+                                    Cached_CombatCompareText[3 + hitType] += ToInfo("复杂效果", $"=>{____damageCompareData.AvoidValue[idx]}", 1) + special_skills_text;
                             }
                         }
                         else
                         {
                             if (myCompareData.HitValue[0] != ____damageCompareData.HitValue[0])
-                                Cached_CombatCompareText[0] += ToInfo("复杂效果", $"=>{____damageCompareData.HitValue[0] / 100}", 1) + special_skills_text;
+                                Cached_CombatCompareText[0] += ToInfo("复杂效果", $"=>{____damageCompareData.HitValue[0]}", 1) + special_skills_text;
                             if (myCompareData.AvoidValue[0] != ____damageCompareData.AvoidValue[0])
-                                Cached_CombatCompareText[3] += ToInfo("复杂效果", $"=>{____damageCompareData.AvoidValue[0] / 100}", 1) + special_skills_text;
+                                Cached_CombatCompareText[3] += ToInfo("复杂效果", $"=>{____damageCompareData.AvoidValue[0]}", 1) + special_skills_text;
                         }
 
                         if (myCompareData.OuterAttackValue != ____damageCompareData.OuterAttackValue)
-                            Cached_CombatCompareText[6] += ToInfo("复杂效果", $"=>{____damageCompareData.OuterAttackValue / 100}", 1) + special_skills_text;
+                            Cached_CombatCompareText[6] += ToInfo("复杂效果", $"=>{____damageCompareData.OuterAttackValue}", 1) + special_skills_text;
                         if (myCompareData.InnerAttackValue != ____damageCompareData.InnerAttackValue)
-                            Cached_CombatCompareText[7] += ToInfo("复杂效果", $"=>{____damageCompareData.InnerAttackValue / 100}", 1) + special_skills_text;
+                            Cached_CombatCompareText[7] += ToInfo("复杂效果", $"=>{____damageCompareData.InnerAttackValue}", 1) + special_skills_text;
                         if (myCompareData.OuterDefendValue != ____damageCompareData.OuterDefendValue)
-                            Cached_CombatCompareText[8] += ToInfo("复杂效果", $"=>{____damageCompareData.OuterDefendValue / 100}", 1) + special_skills_text;
+                            Cached_CombatCompareText[8] += ToInfo("复杂效果", $"=>{____damageCompareData.OuterDefendValue}", 1) + special_skills_text;
                         if (myCompareData.InnerDefendValue != ____damageCompareData.InnerDefendValue)
-                            Cached_CombatCompareText[9] += ToInfo("复杂效果", $"=>{____damageCompareData.InnerDefendValue / 100}", 1) + special_skills_text;
+                            Cached_CombatCompareText[9] += ToInfo("复杂效果", $"=>{____damageCompareData.InnerDefendValue}", 1) + special_skills_text;
                     }
 
                 }
@@ -385,7 +391,7 @@ namespace EffectInfo
                 result += tmp;
             }
             else//无视闪避的特殊效果
-                ignoreArmor = DomainManager.SpecialEffect.ModifyData(enemyChar.GetId(), attackSkillId, MyAffectedDataFieldIds.IgnoreArmorOnCalcAvoid, false);
+                ignoreArmor = DomainManager.SpecialEffect.ModifyData(enemyChar.GetId(), attackSkillId, MyAffectedDataFieldIds.IgnoreArmor, false);
 
             int moveSkillAdd = 0;
             if (isHit && character.GetAffectingMoveSkillId() >= 0)//身法？
@@ -395,14 +401,15 @@ namespace EffectInfo
                 var skill_name = GetCombatSkillName(character.GetAffectingMoveSkillId());
                 CombatSkill move_skill = DomainManager.CombatSkill.GetElement_CombatSkills(new CombatSkillKey(id, character.GetAffectingMoveSkillId()));
                 HitOrAvoidInts addHitValues = move_skill.GetAddHitValueOnCast();
-                total = GlobalConfig.Instance.AgileSkillBaseAddHit * addHitValues.Items[hitType] / 100;
-                tmp += ToInfoPercent("基础", GlobalConfig.Instance.AgileSkillBaseAddHit, -2);
-                tmp += ToInfoAdd(skill_name, addHitValues.Items[hitType], -2);
-                if (addHitValues.Items[hitType] != 0)
-                    tmp += GetCombatSkillAddFieldInfo(move_skill, addHitValues.Items[hitType], hitTypeFieldId[hitType]).Item2;
+
+                total = addHitValues.Items[hitType];
+                //tmp += ToInfoPercent("身法倍率", GlobalConfig.Instance.AgileSkillBaseAddHit, -2);
+                tmp += ToInfoAdd(skill_name, total, -2);
+                if (total != 0)
+                    tmp += GetCombatSkillAddFieldInfo(move_skill, total, hitTypeFieldId[hitType]).Item2;
+
                 result += ToInfoAdd($"身法（不吃武器乘算）", total, -1) + tmp;
                 moveSkillAdd = total;
-                check_value += total;
             }
             else if ((!isHit) && character.GetAffectingDefendSkillId() > 0)//防御技能
             {
@@ -412,11 +419,12 @@ namespace EffectInfo
                 CombatSkill defend_skill = DomainManager.CombatSkill.GetElement_CombatSkills(new CombatSkillKey(id, character.GetAffectingDefendSkillId()));
                 HitOrAvoidInts addAvoidValues = defend_skill.GetAddAvoidValueOnCast();
                 //注意此处乘法顺序和命中不同，影响取整
-                total = GlobalConfig.Instance.DefendSkillBaseAddAvoid * addAvoidValues.Items[hitType] / 100;
-                tmp += ToInfoPercent("护体倍率", GlobalConfig.Instance.DefendSkillBaseAddAvoid, -2);
-                tmp += ToInfoAdd(skill_name, addAvoidValues.Items[hitType], -2);
-                if (addAvoidValues.Items[hitType] != 0)
-                    tmp += GetCombatSkillAddFieldInfo(defend_skill, addAvoidValues.Items[hitType], hitTypeFieldId[hitType]).Item2;
+                total = addAvoidValues.Items[hitType];
+                //tmp += ToInfoPercent("护体倍率", GlobalConfig.Instance.DefendSkillBaseAddAvoid, -2);
+                tmp += ToInfoAdd(skill_name, total, -2);
+                if (total != 0)
+                    tmp += GetCombatSkillAddFieldInfo(defend_skill, total, hitTypeFieldId[hitType]).Item2;
+
                 result += ToInfoAdd($"护体", total, -1) + tmp;
                 check_value += total;
             }
@@ -470,10 +478,10 @@ namespace EffectInfo
             //放大
             {
                 //var value = isHit ? 150 : 105;
-                var value = 100;
-                check_value *= value;//没有除100，这之后都是以放大100倍的状态计算
-                moveSkillAdd *= 100;
-                result += ToInfoMulti("放大", value, -1);
+                //var value = 100;
+                //check_value *= value;//没有除100，这之后都是以放大100倍的状态计算
+                //moveSkillAdd *= 100;
+                //result += ToInfoMulti("放大", value, -1);
             }
             //武器
             if (isHit)
@@ -518,7 +526,7 @@ namespace EffectInfo
                 }
                 result += ToInfoPercent($"武器乘算", percent, -1);
                 result += tmp;
-                check_value = (check_value - moveSkillAdd) * percent / 100 + moveSkillAdd;
+                check_value = check_value * percent / 100 + moveSkillAdd;
             }
             //乘算系数
             {
@@ -641,9 +649,9 @@ namespace EffectInfo
             //    result += ToInfoPercent($"{name}破绽*20+100", value, 1);
             //    check_value = check_value * value / 100;
             //}
-            check_value /= 100;
-            result += ToInfoDivision("显示", 100, 1);
-            result += ToInfoNote("仅用于显示，计算时没有除100", 1);
+            //check_value /= 100;
+            //result += ToInfoDivision("显示", 100, 1);
+            //result += ToInfoNote("仅用于显示，计算时没有除100", 1);
             result += ToInfoAdd("总合校验值", check_value, 1);
             if (check_value != target_value)
             {
@@ -664,7 +672,7 @@ namespace EffectInfo
         {
             bool isOutter = idx == 0;
             var result = "";
-            int check_value;
+            long check_value;
             bool dirty_tag = false;//没用
             if (isResist)
                 check_value = isOutter ? character.GetCharacter().GetPenetrationResists().Outer : character.GetCharacter().GetPenetrationResists().Inner;
@@ -672,7 +680,7 @@ namespace EffectInfo
                 check_value = isOutter ? character.GetCharacter().GetPenetrations().Outer : character.GetCharacter().GetPenetrations().Inner;
             if (bodyPart >= 0)
                 result += ToInfo($"攻击部位", $"{Config.BodyPart.Instance[bodyPart].Name}", 1);
-            result += ToInfoAdd("面板", check_value, 1);
+            result += ToInfoAdd("面板", (int)check_value, 1);
 
             List<ushort> peneFieldId = new List<ushort>();
             List<ushort> enemyPeneFieldId = new List<ushort>();
@@ -704,35 +712,36 @@ namespace EffectInfo
 
             //防御功法
             //UpdateDamageCompareData中调用GetPenetrateResist时，ignoreDefendSkill恒为false
+            int defendSkillValue = 0;
             if (isResist)
             {
                 if (character.GetAffectingDefendSkillId() >= 0)//&& !ignoreDefendSkill
                 {
                     GameData.Domains.CombatSkill.CombatSkill defendSkill = DomainManager.CombatSkill.GetElement_CombatSkills(new CombatSkillKey(_id, character.GetAffectingDefendSkillId()));
                     OuterAndInnerInts addPenetrateResists = defendSkill.GetAddPenetrateResist();
-                    var skill_name = GetCombatSkillName(character.GetAffectingDefendSkillId());
-                    var factor = isOutter ? addPenetrateResists.Outer : addPenetrateResists.Inner;
-                    var value = GlobalConfig.Instance.DefendSkillBaseAddPenetrateResist
+                    string skill_name = GetCombatSkillName(character.GetAffectingDefendSkillId());
+                    int factor = isOutter ? addPenetrateResists.Outer : addPenetrateResists.Inner;
+                    defendSkillValue = factor
                                     //* defendSkill.GetPracticeLevel() / 100 
                                     //* defendSkill.GetPower() / 100 
-                                    * factor / 100;
+                                    ;
                     var tmp = "";
                     tmp += ToInfoAdd(skill_name, factor, 2);
-                    tmp += ToInfoPercent("护体倍率", GlobalConfig.Instance.DefendSkillBaseAddPenetrateResist, 2);
                     if (factor != 0)
                         tmp += GetCombatSkillAddFieldInfo(defendSkill, factor, peneFieldId[idx]).Item2;
-                    result += ToInfoAdd($"护体", value, 1) + tmp;
-                    check_value += value;
+                    result += ToInfoAdd($"护体(不吃装备乘算)", defendSkillValue, 1) + tmp;
+                    check_value += defendSkillValue;
                 }
             }
             {
                 //var value = isResist ? 105 : 150;
-                var value = 100;
-                check_value *= value;//没有除100，这之后都是以放大100倍的状态计算
-                result += ToInfoMulti("放大", value, -1);
+                //var value = 100;
+                //check_value *= value;//没有除100，这之后都是以放大100倍的状态计算
+                //result += ToInfoMulti("放大", value, -1);
             }
             {//效果加成
                 int total_value = 0;
+                int armorValue = 0;
                 var tmp = "";
                 if (!isResist)
                 {
@@ -780,14 +789,14 @@ namespace EffectInfo
                     else
                         total_value = total_value * innerRatio / 100;
 
-                    tmp = ToInfoAdd("武器", total_value, 2) + tmp;
+                    tmp = ToInfoAdd($"武器", total_value, 2) + tmp;
                     //武器坚韧低于防具破刃时,在内外比例之后计算
                     if (bodyPart >= 0 && !ignoreArmor)
                     {
                         ItemKey armorKey = enemyChar.Armors[bodyPart];
                         GameData.Domains.Item.Armor armor = (armorKey.IsValid() ? DomainManager.Item.GetElement_Armors(armorKey.Id) : null);
-                        int weaponEquipDefense = _combatDomain.GetWeaponEquiDefense(character, weapon, attackSkillId);
-                        int armorEquipAttack = _combatDomain.GetArmorEquiAttack(enemyChar, armor);
+                        int weaponEquipDefense = CombatDomain.CalcWeaponDefend(character, weapon, attackSkillId);
+                        int armorEquipAttack = CombatDomain.CalcArmorAttack(enemyChar, armor);
                         if (armorEquipAttack > weaponEquipDefense)
                         {
                             //注意取整，不能直接把x-x*factor改成x*(1-factor)的形式
@@ -805,7 +814,6 @@ namespace EffectInfo
                     //此处传入的fieldId是带Attacker的，因为没有常态的破体加成需要与其区分
                     if (skillAddPercent != 0)
                         tmp += GetCombatSkillAddFieldInfo(DomainManager.CombatSkill.GetElement_CombatSkills(new CombatSkillKey(_id, attackSkillId)), skillAddPercent, peneFieldId[idx]).Item2;
-
                 }
                 else
                 {
@@ -821,8 +829,8 @@ namespace EffectInfo
                             total_value += (isOutter ? penetrationResistFactors.Outer : penetrationResistFactors.Inner) * use_power / 100;
                             tmp += ToInfoAdd($"{armor.GetName()}({use_power}%)", total_value + 100, 2);
                         }
-                        int weaponEquipAttack = _combatDomain.GetWeaponEquiAttack(enemyChar, weapon, attackSkillId);
-                        int armorEquipDefense = _combatDomain.GetArmorEquiDefense(character, armor);
+                        int weaponEquipAttack = CombatDomain.CalcWeaponAttack(enemyChar, weapon, attackSkillId);
+                        int armorEquipDefense = CombatDomain.CalcArmorDefend(character, armor);
                         if (weaponEquipAttack > armorEquipDefense)
                         {
                             //注意取整，不能直接把x-x*factor改成x*(1-factor)的形式
@@ -834,8 +842,10 @@ namespace EffectInfo
                             total_value += value;
                         }
                         total_value = Math.Max(total_value, 0);
-                        total_value += 100;
                     }
+                    armorValue = total_value;
+                    total_value += 100;
+
                     //毒
                     {
                         int poisonType = -1;
@@ -874,7 +884,14 @@ namespace EffectInfo
                 }
 
                 result += ToInfoPercent("效果加成", total_value, 1) + tmp;
-                check_value = check_value * total_value / 100;
+                if (!isResist)
+                {
+                    check_value = check_value * total_value / 100;
+                }
+                else
+                {
+                    check_value = (check_value * total_value - defendSkillValue * armorValue) / 100;
+                }
             }
             //不叠加效果加成
             //不可叠加乘算
@@ -930,10 +947,10 @@ namespace EffectInfo
                 result += tmp.Item2;
                 check_value = check_value * percent / 100;
             }
-            check_value /= 100;
-            result += ToInfoDivision("显示", 100, 1);
-            result += ToInfoNote("仅用于显示，计算时没有除100", 1);
-            result += ToInfoAdd("总合校验值", check_value, 1);
+            //check_value /= 100;
+            //result += ToInfoDivision("显示", 100, 1);
+            //result += ToInfoNote("仅用于显示，计算时没有除100", 1);
+            result += ToInfoAdd("总合校验值", (int)check_value, 1);
             if (check_value != target_value)
             {
                 result += ToInfo("不一致！！！", "", 1);

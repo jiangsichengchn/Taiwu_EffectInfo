@@ -526,11 +526,7 @@ namespace EffectInfo
 
 		public static ushort MakeInjuryMinPercent = 0;
 
-		public static ushort IgnoreArmorOnCalcAvoid = 0;
-
-		public static ushort IgnoreArmorOnCalcPenetrateResist = 0;
-
-		public static ushort IgnoreArmorOnCalcInjury = 0;
+		public static ushort IgnoreArmor = 0;
 
 		public static ushort MakeDamageType = 0;
 
