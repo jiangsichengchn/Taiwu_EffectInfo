@@ -1143,13 +1143,13 @@ namespace EffectInfo
                     }
                     if (check_value[i] < 0)
                     {
-                        result[i] += ToInfo("不低于0", $"0", 1);
+                        result[i] += ToInfo("不低于0", "0", 1);
                         check_value[i] = 0;
                     }
-                    if (check_value[i] > 500)
+                    if (check_value[i] > 1000)
                     {
-                        result[i] += ToInfo("不大于500", $"500", 1);
-                        check_value[i] = 500;
+                        result[i] += ToInfo("不大于1000", "1000", 1);
+                        check_value[i] = 1000;
                     }
                 }
             }
@@ -1590,7 +1590,7 @@ namespace EffectInfo
                 //内力
                 if (canAdd)
                     result += CustomGetNeiliAllocationInfo(ref check_value, character, propertyType, true);
-                if (canAdd)
+                if (canAdd && propertyType == ECharacterPropertyReferencedType.MoveSpeed)
                 {
                     if (DomainManager.Combat.IsCharInCombat(charId))
                     {

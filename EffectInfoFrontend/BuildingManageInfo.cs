@@ -29,8 +29,7 @@ namespace EffectInfo
 
         //创建mouseTip并更新信息
         //在MouseTipManager中持续监视最上方的GameObject,如果这个GameObject下挂了MouseTipDisplayer类型的Component就会显示mouseTip
-        [HarmonyPrefix, HarmonyPatch(typeof(UI_BuildingManage),
-                  "SetResourceInfo")]
+        [HarmonyPrefix, HarmonyPatch(typeof(UI_BuildingManage), "SetResourceInfo", new Type[] { typeof(sbyte), typeof(Refers) })]
         public static void SetResourceInfoPrePatch(UI_BuildingManage __instance)
         {
 
