@@ -1599,7 +1599,7 @@ namespace EffectInfo
                         if (agileSkillId >= 0)
                         {
                             GameData.Domains.CombatSkill.CombatSkill skill = DomainManager.CombatSkill.GetElement_CombatSkills(new CombatSkillKey(charId, agileSkillId));
-                            var value = CombatSkillDomain.CalcCastAddMoveSpeed(skill, combatChar.AffectingMoveSkillFixedPower);
+                            var value = CombatSkillDomain.CalcCastAddMoveSpeed(skill, skill.GetPower());
                             check_value += value;
                             result += ToInfoAdd("战斗技能", value, 1);
                             //GetCombatSkillCastAddMoveSpeedInfo很简单就不写个函数了
